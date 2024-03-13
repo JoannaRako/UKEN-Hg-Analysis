@@ -1,1 +1,1 @@
-This is sample of analysis
+Example file od analysis.
