@@ -1,8 +1,8 @@
 # This is main script
-
 ### 0 
 # PACKAGE just for convert XLS for CSV
 library(readxl)
+
 # Conversion of .xlsx to .csv
 # ---------------------------
 xlsx_path <- "Data/Materials/example_cal_curve.xls"
@@ -11,60 +11,77 @@ csv <- "Data/Materials/example_cal_curve.csv"
 write.csv(xlsx, csv, row.names = FALSE)
 
 
+############## START #################
 
-
-### 1 
-# START - read file
-#---------------------------
+# Import, read and remove NA
+setwd("c:/Users/joasi/UKEN_Hg_analysis")
 data <- read.csv("Data/Materials/example_cal_curve.csv")
+data <- na.omit(data)
 head(data)
-clean_data <- na.omit(data)
+
+true_rows <- data[data$T.F == 'True', ]
+false_rows <- data[data$T.F == 'False', ]
+head(true_rows)
 
 
-### 2 ###
-# Creation of Calibration Curve
-# -----------------------------
-# OX and OY
-x <- clean_data$STD..ng.
-y <- clean_data$PEAK #(zalezna?)
+# 3rd degree model
+# raw=TRUE -> causes the polynomial to be created from the original data rather than the normalized data
+model <- lm(
+    PEAK ~ poly( STD..ng., 3, raw=TRUE ), 
+    data = true_rows )
 
-# Generate Plot
-plot(x, y, xlab = "Standard (ng)", ylab = "Peak", main = "Krzywa kalibracyjna")
-
-# 0. Linear
-lin_model <- lm(PEAK ~ STD..ng., data = clean_data)
-summary(lin_model)
-plot(clean_data$STD..ng., clean_data$PEAK)
-abline(lin_model, col = "blue")
-
-
-
-# 1. Import, read and remove NA
-data <- read.csv("Data/Materials/example_cal_curve_up3.csv")
-clean_data <- na.omit(data)
-
-# 2. 3rd degree model
-model <- lm(PEAK ~ poly(STD..ng., 3, raw=TRUE), data = clean_data)
 summary(model)
+summary_info <- summary( lin_model )
 
-# 3. Generate plot and calibration curve
-plot(clean_data$STD..ng., clean_data$PEAK, main="Krzywa kalibracyjna - z dokl do 3",
-     xlab="STD..ng.", ylab="PEAK", pch=18)
-curve(predict(model, newdata=data.frame(STD..ng.=x)), add=TRUE, col="red", lwd=2)
+# Extract R-squared value
+rsquared <- summary_info$r.squared
 
-# 4. Identification of outliers based on residuals
+# Generate plot and calibration line (based on model)
+plot(true_rows$STD..ng., true_rows$PEAK, 
+     main = "Krzywa kalibracyjna",
+     xlab = "STD..ng.", 
+     ylab = "PEAK", 
+     pch = 16,
+     col = "chartreuse3",
+     )
+
+
+
+# Add calibration line
+curve(predict(model, data.frame(STD..ng.=x)), 
+      add = TRUE, 
+      col = "black",
+      lty = "dashed",
+      lwd = 0
+      )
+
+# Add false_rows point to plot - red
+points(false_rows$STD..ng., false_rows$PEAK, 
+       pch = 16, 
+       col = "red"
+       )
+
+
+
+
+
+
+
+
+
+# 6. Identification of outliers based on residuals
 res <- residuals(model)
 IQR_res <- IQR(res)
 upper_bound <- quantile(res, 0.75) + 1.5 * IQR_res
 lower_bound <- quantile(res, 0.25) - 1.5 * IQR_res
 outliers <- which(res > upper_bound | res < lower_bound)
 
-# 5. Remove outliers and refit the model
+# 7. Remove outliers and refit the model
 clean_data_no_outliers <- clean_data[-outliers, ]
 model_no_outliers <- lm(PEAK ~ poly(STD..ng., 3, raw=TRUE), data = clean_data_no_outliers)
 summary(model_no_outliers)
 
-# 6. Generate a plot of data without outliers and a model curve
+# 8. Generate a plot of data without outliers and a model curve
 plot(clean_data_no_outliers$STD..ng., clean_data_no_outliers$PEAK, main="Krzywa kalibracyjna - Wielomian 3 stopnia (bez odstających)",
      xlab="STD..ng.", ylab="PEAK", pch=19, col="blue")
 curve(predict(model_no_outliers, newdata=data.frame(STD..ng.=x)), add=TRUE, col="red", lwd=2)
