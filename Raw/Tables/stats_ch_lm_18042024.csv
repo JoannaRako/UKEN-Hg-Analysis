@@ -1,0 +1,19 @@
+
+Call:
+lm(formula = PEAK ~ STD..ng., data = true_rows)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-8.077e-05 -2.051e-05  6.750e-07  2.305e-05  7.686e-05 
+
+Coefficients:
+             Estimate Std. Error t value Pr(>|t|)    
+(Intercept) 3.751e-05  1.318e-05   2.847  0.00965 ** 
+STD..ng.    1.686e-03  1.049e-05 160.615  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 3.672e-05 on 21 degrees of freedom
+Multiple R-squared:  0.9992,	Adjusted R-squared:  0.9991 
+F-statistic: 2.58e+04 on 1 and 21 DF,  p-value: < 2.2e-16
+

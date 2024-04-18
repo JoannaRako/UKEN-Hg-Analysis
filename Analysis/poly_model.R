@@ -1,20 +1,25 @@
 # This is main script
-### 0 
+### 0 ###
 # PACKAGE just for convert XLS for CSV
+# ---------------------------
 library(readxl)
 
 # Conversion of .xlsx to .csv
-# ---------------------------
 xlsx_path <- "Data/Materials/example_cal_curve.xls"
 xlsx <- read_excel(xlsx_path)
 csv <- "Data/Materials/example_cal_curve.csv"
 write.csv(xlsx, csv, row.names = FALSE)
 
 
-############## START #################
+
+
+### 1 ###
+# START 
+# -------------------------
+
+date <- format(Sys.Date(), "%d%m%Y")
 
 # Import, read and remove NA
-setwd("c:/Users/joasi/UKEN_Hg_analysis")
 data <- read.csv("Data/Materials/example_cal_curve.csv")
 data <- na.omit(data)
 head(data)
@@ -24,31 +29,57 @@ false_rows <- data[data$T.F == 'False', ]
 head(true_rows)
 
 
-# 3rd degree model
-# raw=TRUE -> causes the polynomial to be created from the original data rather than the normalized data
-model <- lm(
-    PEAK ~ poly( STD..ng., 3, raw=TRUE ), 
+
+### 2 ###
+# POLY 3rd DEGREE - MODEL CALCULATION
+# -----------------------------------
+
+# raw=TRUE -> causes the polynomial to be created 
+# from the original data rather than the normalized data
+
+## Filter
+poly_model <- lm(
+    PEAK ~ poly(STD..ng., 3, raw=TRUE), 
     data = true_rows )
 
-summary(model)
-summary_info <- summary( lin_model )
+## Each
+poly_original <- lm(
+    PEAK ~ poly(STD..ng., 3, raw=TRUE), 
+    data = data)
+
+summary(poly_model)
+summary(poly_original)
 
 # Extract R-squared value
-rsquared <- summary_info$r.squared
+rsquared <- summary(poly_model)$r.squared
+
+
+
+### 3 ###
+# Creation of Calibration Curve
+# -----------------------------
+
+pdf(
+  paste("Raw/Plots/", 
+        "Rplot_poly3rd_", 
+        date, ".pdf",
+        sep = ''),
+  paper = "special"
+)
 
 # Generate plot and calibration line (based on model)
-plot(true_rows$STD..ng., true_rows$PEAK, 
-     main = "Krzywa kalibracyjna",
-     xlab = "STD..ng.", 
-     ylab = "PEAK", 
-     pch = 16,
-     col = "chartreuse3",
-     )
-
-
+dfPlot <-  plot(true_rows$STD..ng., true_rows$PEAK, 
+           main = "Krzywa Model Wielomian 3st",
+           xlab = "STD..ng.", 
+           ylab = "PEAK", 
+           pch = 16,
+           col = "chartreuse3",
+           cex = 1,        # point_size
+           cex.lab = 1.1   # lab_size
+)
 
 # Add calibration line
-curve(predict(model, data.frame(STD..ng.=x)), 
+curve(predict(poly_model, data.frame(STD..ng.=x)), 
       add = TRUE, 
       col = "black",
       lty = "dashed",
@@ -60,6 +91,54 @@ points(false_rows$STD..ng., false_rows$PEAK,
        pch = 16, 
        col = "red"
        )
+
+# Top-center add R ^ 2
+mtext(bquote(
+  R^2 == .(rsquared)),
+  side = 3
+)
+
+#  Add legend
+legend("topleft",
+       legend=c("true", "false","deleted"),
+       col=c("chartreuse3", "red","orange"),
+       pch=16,
+       bty="n"  # without border
+)
+
+
+dfPlot
+dev.off()
+
+
+
+### 4 ###
+# Writing statistics for original and filtered data
+# -------------------------------------------------
+
+
+## Summarize
+directory <- "C:/Users/joasi/UKEN_Hg_Analysis/Raw/Tables/"
+
+# ORIGINAL VALUES
+original_output <- capture.output(summary(poly_original))
+
+fileName = paste(directory, 'stats_org_poly_', date,'.csv', sep='')
+write.table(original_output[-1], 
+            fileName, 
+            quote = FALSE, 
+            row.names = FALSE, 
+            col.names = FALSE)
+
+# CHOSEN VALUES
+chosen_output <- capture.output(summary(poly_model))
+
+fileName = paste(directory, 'stats_ch_poly_', date,'.csv', sep='')
+write.table(chosen_output[-1], 
+            fileName, 
+            quote = FALSE,
+            row.names = FALSE, 
+            col.names = FALSE)
 
 
 

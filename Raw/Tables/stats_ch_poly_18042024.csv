@@ -1,0 +1,21 @@
+
+Call:
+lm(formula = PEAK ~ poly(STD..ng., 3, raw = TRUE), data = true_rows)
+
+Residuals:
+       Min         1Q     Median         3Q        Max 
+-6.502e-05 -1.901e-05  1.575e-06  1.607e-05  6.297e-05 
+
+Coefficients:
+                                 Estimate Std. Error t value Pr(>|t|)    
+(Intercept)                     1.843e-05  1.527e-05   1.207    0.242    
+poly(STD..ng., 3, raw = TRUE)1  1.793e-03  8.193e-05  21.890 6.13e-15 ***
+poly(STD..ng., 3, raw = TRUE)2 -8.381e-05  1.038e-04  -0.807    0.430    
+poly(STD..ng., 3, raw = TRUE)3  1.537e-05  3.390e-05   0.453    0.655    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 3.435e-05 on 19 degrees of freedom
+Multiple R-squared:  0.9994,	Adjusted R-squared:  0.9993 
+F-statistic:  9823 on 3 and 19 DF,  p-value: < 2.2e-16
+
