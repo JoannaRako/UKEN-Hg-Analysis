@@ -34,7 +34,7 @@ lin_original <-
       data = data
 )
 
-summary(lin_model)
+a <- summary(lin_model)
 summary(lin_original)
 
 #  Extract R-squared value OR ADJUST???

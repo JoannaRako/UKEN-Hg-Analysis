@@ -78,6 +78,12 @@ dfPlot <-  plot(true_rows$STD..ng., true_rows$PEAK,
            cex.lab = 1.1   # lab_size
 )
 
+# Add false_rows point to plot - red
+points(false_rows$STD..ng., false_rows$PEAK, 
+       pch = 16, 
+       col = "red"
+)
+
 # Add calibration line
 curve(predict(poly_model, data.frame(STD..ng.=x)), 
       add = TRUE, 
@@ -86,11 +92,6 @@ curve(predict(poly_model, data.frame(STD..ng.=x)),
       lwd = 0
       )
 
-# Add false_rows point to plot - red
-points(false_rows$STD..ng., false_rows$PEAK, 
-       pch = 16, 
-       col = "red"
-       )
 
 # Top-center add R ^ 2
 mtext(bquote(
@@ -142,6 +143,11 @@ write.table(chosen_output[-1],
 
 
 
+
+
+
+######################## is it possible to do next  manually? Yes, SHINY.R 
+######################## https://shiny.posit.co #
 
 
 
