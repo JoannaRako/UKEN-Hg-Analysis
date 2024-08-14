@@ -14,7 +14,8 @@ poly_original <- lm(
   data = data
 )
 
-summary(poly_original)
+# Save the summary of the original model as a string
+original_model_summary <- capture.output(summary(poly_original))
 
 # Extract R-squared value from the original model
 rsquared_original <- summary(poly_original)$r.squared
@@ -26,7 +27,9 @@ ui <- fluidPage(
     sidebarPanel(
       downloadButton("downloadPlot", "Download Plot"),
       downloadButton("downloadStats", "Download Statistics"),
-      actionButton("reset", "Reset")
+      actionButton("reset", "Reset"),
+      downloadButton("downloadOriginalPlot", "Download Original Plot"),
+      downloadButton("downloadOriginalStats", "Download Original Statistics")
     ),
     mainPanel(
       plotOutput("calibrationPlot", click = "plot_click"),
@@ -187,12 +190,12 @@ server <- function(input, output, session) {
     )
     
     cat("Original Model Summary:\n")
-    print(summary(poly_original))
+    cat(original_model_summary, sep = "\n")
     cat("\nFiltered Model Summary:\n")
     print(summary(poly_model))
   })
   
-  # Download Plot
+  # Download Filtered Plot
   output$downloadPlot <- downloadHandler(
     filename = function() {
       paste("calibration_curve_", Sys.Date(), ".png", sep = "")
@@ -272,7 +275,7 @@ server <- function(input, output, session) {
     }
   )
   
-  # Download Statistics
+  # Download Filtered Statistics
   output$downloadStats <- downloadHandler(
     filename = function() {
       paste("stats_", Sys.Date(), ".txt", sep = "")
@@ -303,10 +306,74 @@ server <- function(input, output, session) {
       
       capture.output({
         cat("Original Model Summary:\n")
-        print(summary(poly_original))
+        cat(original_model_summary, sep = "\n")
         cat("\nFiltered Model Summary:\n")
         print(summary(poly_model))
       }, file = file)
+    }
+  )
+  
+  # Download Original Plot
+  output$downloadOriginalPlot <- downloadHandler(
+    filename = function() {
+      paste("original_calibration_curve_", Sys.Date(), ".png", sep = "")
+    },
+    content = function(file) {
+      png(file)
+      
+      # Plot True points in green
+      plot(data$STD..ng.[data$T.F == "True"], data$PEAK[data$T.F == "True"], 
+           main = "Original Calibration Curve - Polynomial 3rd Degree",
+           xlab = "STD..ng.", 
+           ylab = "PEAK", 
+           pch = 16,
+           col = "green",
+           cex = 1,        
+           cex.lab = 1.1,
+           ylim = range(data$PEAK),  # Ensures all points are visible on the same scale
+           xlim = range(data$STD..ng.)
+      )
+      
+      # Plot False points in red
+      points(data$STD..ng.[data$T.F == "False"], data$PEAK[data$T.F == "False"], 
+             pch = 16, 
+             col = "red"
+      )
+      
+      # Add the polynomial curve for the original model
+      curve(predict(poly_original, data.frame(STD..ng.=x)), 
+            add = TRUE, 
+            col = "black",
+            lty = "dashed",
+            lwd = 1
+      )
+      
+      # Add the R-squared value
+      mtext(bquote(
+        R^2 == .(rsquared_original)),
+        side = 3
+      )
+      
+      # Add a legend
+      legend("topleft",
+             legend = c("True", "False"),
+             col = c("green", "red"),
+             pch = 16,
+             bty = "n"
+      )
+      
+      dev.off()
+    }
+  )
+  
+  # Download Original Statistics
+  output$downloadOriginalStats <- downloadHandler(
+    filename = function() {
+      paste("original_stats_", Sys.Date(), ".txt", sep = "")
+    },
+    content = function(file) {
+      # Write the original model summary directly to the file
+      writeLines(original_model_summary, con = file)
     }
   )
 }
