@@ -1,3 +1,7 @@
+# if new version and deploy on shinyapps.io important: non rsd file in dir
+# library(rsconnect)
+# rsconnect::deployApp(appDir = "C:/Users/joann/Documents/UKEN_Hg_Analysis/UKEN-Hg-Analysis/Analysis", appPrimaryDoc = NULL)
+
 library(shiny)
 
 ########################        Define UI       ########################
@@ -124,7 +128,7 @@ server <- function(input, output, session) {
   ########################   Model Calculations   ########################
   # Reactive expressions for original models based on current data
   poly_original <- reactive({
-    req(data_reactive())
+    req(data_reactive()) # raw = TRUE Using basic (x, x², x³)
     lm(PEAK ~ poly(STD..ng., 3, raw = TRUE), data = data_reactive())
   })
   
@@ -369,7 +373,7 @@ server <- function(input, output, session) {
   # Filtered Stats
   output$filteredStatsOutput <- renderPrint({ 
     req(generate_plot_and_model())
-    cat("Filtered Model Summary (Our plot and what is clicked - included/excluded):\n")
+    cat("Filtered Model Summary (Data:\n- starts with True values and what is clicked - included/excluded):\n")
     cat(generate_plot_and_model()$summary(), sep = "\n")
   })
   
@@ -377,10 +381,10 @@ server <- function(input, output, session) {
   output$originalStatsOutput <- renderPrint({
     req(data_reactive())
     if (input$modelType == "poly") {
-      cat("Original Model Summary (Polynomial 3rd Degree):\n")
+      cat("Original Model Summary (Polynomial 3rd Degree):\n - True and False values from file")
       cat(original_model_summary_poly(), sep = "\n")
     } else {
-      cat("Original Model Summary (Linear):\n")
+      cat("Original Model Summary (Linear):\n - True and False values from file")
       cat(original_model_summary_linear(), sep = "\n")
     }
   })

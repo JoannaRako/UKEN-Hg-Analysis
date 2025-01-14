@@ -5,6 +5,6 @@ account: jrakoczy
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 13662854
-bundleId: 9605713
+bundleId: 9646546
 url: https://jrakoczy.shinyapps.io/analysis/
 version: 1
