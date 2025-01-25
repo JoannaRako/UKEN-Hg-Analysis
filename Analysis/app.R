@@ -120,6 +120,8 @@ server <- function(input, output, session) {
     req(input$file_input)  # Ensure a file is uploaded
     file_path <- input$file_input$datapath
     uploaded_data <- na.omit(read.csv(file_path))
+    # Adding original index of rows to save in good form after closing
+    uploaded_data$row_index <- seq_len(nrow(uploaded_data))
     data_reactive(uploaded_data)
   })
   
@@ -274,8 +276,8 @@ server <- function(input, output, session) {
     included_false_points_df <- false_rows_df[false_rows_df$Included, ]
     
     combined_data <- rbind(
-      true_points[, c("STD..ng.", "PEAK")],
-      included_false_points_df[, c("STD..ng.", "PEAK")]
+        true_points[, c("STD..ng.", "PEAK", "T.F", "row_index")],
+        included_false_points_df[, c("STD..ng.", "PEAK", "T.F", "row_index")]
     )
     
     # Fit the model based on user selection
@@ -288,7 +290,8 @@ server <- function(input, output, session) {
     
     # Store the final filtered model and data
     final_filtered_model <<- model
-    final_filtered_data <<- combined_data
+    final_filtered_data <<- combined_data[order(combined_data$row_index), ]
+
     
     # User-defined LoD, LoQ, LoL
     lod_x <- input$lod_x
