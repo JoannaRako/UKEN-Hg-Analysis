@@ -72,7 +72,7 @@ ui <- fluidPage(
     )
   ),
   
-  ########## 2) SEKCJA HISTOGRAMÓW (RESZTY) ##########
+  ########## HISTOGRAM SECTION (RESIDIUALS) ##########
   fluidRow(
     column(12, h3("Histograms of Residuals by unique STD..ng."))
   ),
@@ -105,9 +105,12 @@ ui <- fluidPage(
   )
 )
 
-# Define global variables to store after app closes
+# Global variables to store AFTER app closes
 final_filtered_model <- NULL
 final_filtered_data <- NULL
+final_original_linear_model <- NULL
+final_original_3rd_model <- NULL
+raw_data <- NULL
 
 ########################   Define Server Logic  ########################
 server <- function(input, output, session) {
@@ -120,9 +123,18 @@ server <- function(input, output, session) {
     req(input$file_input)  # Ensure a file is uploaded
     file_path <- input$file_input$datapath
     uploaded_data <- na.omit(read.csv(file_path))
-    # Adding original index of rows to save in good form after closing
+    
+    # Adding original index of rows and RAW DATA to save after closing
     uploaded_data$row_index <- seq_len(nrow(uploaded_data))
+    raw_data <<- uploaded_data[, c("STD..ng.", "PEAK", "T.F")]
+    
+    # Put data in the reactiveVal
     data_reactive(uploaded_data)
+    
+    # "original" RAW models for capure after closing
+    final_original_3rd_model <<- lm(PEAK ~ poly(STD..ng., 3, raw = TRUE), data = uploaded_data)
+    final_original_linear_model <<- lm(PEAK ~ STD..ng., data = uploaded_data)
+    
   })
   
   date <- format(Sys.Date(), "%d%m%Y")
@@ -738,13 +750,28 @@ server <- function(input, output, session) {
       }
     })
   })
+  
 }
 
-# Save after closing
 onStop(function() {
+  # Already computed earlier:
   saveRDS(final_filtered_model, "final_filtered_model.rds")
-  saveRDS(final_filtered_data, "final_filtered_data.rds")
+  saveRDS(final_filtered_data,  "final_filtered_data.rds")
+  
+  # Only save if they exist:
+  if (!is.null(final_original_3rd_model)) {
+    saveRDS(final_original_3rd_model, "final_original_3rd_model.rds")
+  }
+  if (!is.null(final_original_linear_model)) {
+    saveRDS(final_original_linear_model, "final_original_linear_model.rds")
+  }
+  
+  if (!is.null(raw_data)) {
+    saveRDS(raw_data, "raw_data.rds")
+  }
 })
+
+
 
 # Activate
 shinyApp(ui = ui, server = server)
