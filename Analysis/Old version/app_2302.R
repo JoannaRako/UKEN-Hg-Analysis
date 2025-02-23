@@ -11,10 +11,10 @@ ui <- fluidPage(
   ########## Upload section ##########
   fluidRow(
     column(12,
-           fileInput("file_input", "Upload CSV File", 
-                     accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
-           actionButton("process_button", "Process Data"))
-  ),
+    fileInput("file_input", "Upload CSV File", 
+              accept = c("text/csv", "text/comma-separated-values,text/plain", ".csv")),
+    actionButton("process_button", "Process Data"))
+    ),
   
   ########## Field section ##########
   fluidRow(
@@ -124,11 +124,6 @@ server <- function(input, output, session) {
     file_path <- input$file_input$datapath
     uploaded_data <- na.omit(read.csv(file_path))
     
-    # 1) DODANIE KOLUMNY T.F, JEŚLI JEJ BRAK
-    if (!"T.F" %in% colnames(uploaded_data)) {
-      uploaded_data$T.F <- "True"
-    }
-    
     # Adding original index of rows and RAW DATA to save after closing
     uploaded_data$row_index <- seq_len(nrow(uploaded_data))
     raw_data <<- uploaded_data[, c("STD..ng.", "PEAK", "T.F")]
@@ -220,31 +215,13 @@ server <- function(input, output, session) {
       true_rows_df <- true_rows()
       false_rows_df <- false_rows()
       
+      new_true_point <- which.min((true_rows_df$STD..ng. - click$x)^2 + (true_rows_df$PEAK - click$y)^2)
+      new_false_point <- which.min((false_rows_df$STD..ng. - click$x)^2 + (false_rows_df$PEAK - click$y)^2)
       excluded_true <- excluded_true_points()
       included_false <- included_false_points()
       
-      # Handle the case of an empty true_rows_df
-      if (nrow(true_rows_df) > 0) {
-        new_true_point <- which.min((true_rows_df$STD..ng. - click$x)^2 + (true_rows_df$PEAK - click$y)^2)
-        dist_true <- (true_rows_df$STD..ng.[new_true_point] - click$x)^2 + (true_rows_df$PEAK[new_true_point] - click$y)^2
-      } else {
-        new_true_point <- NA
-        dist_true <- Inf
-      }
-      
-      # Handle the case of an empty false_rows_df
-      if (nrow(false_rows_df) > 0) {
-        new_false_point <- which.min((false_rows_df$STD..ng. - click$x)^2 + (false_rows_df$PEAK - click$y)^2)
-        dist_false <- (false_rows_df$STD..ng.[new_false_point] - click$x)^2 + (false_rows_df$PEAK[new_false_point] - click$y)^2
-      } else {
-        new_false_point <- NA
-        dist_false <- Inf
-      }
-      
-      # If both are Inf, neither subset has rows -> do nothing
-      if (is.infinite(dist_true) && is.infinite(dist_false)) {
-        return()
-      }
+      dist_true <- (true_rows_df$STD..ng.[new_true_point] - click$x)^2 + (true_rows_df$PEAK[new_true_point] - click$y)^2
+      dist_false <- (false_rows_df$STD..ng.[new_false_point] - click$x)^2 + (false_rows_df$PEAK[new_false_point] - click$y)^2
       
       if (dist_true < dist_false) {
         if (new_true_point %in% excluded_true) {
@@ -294,28 +271,16 @@ server <- function(input, output, session) {
     true_rows_df <- true_rows()
     false_rows_df <- false_rows()
     
-    # 2) ZABEZPIECZENIE, GDY KTOŚ KLIKA PRZY PUSTYM data frame
     # Mark True that are excluded
-    if (nrow(true_rows_df) > 0) {
-      true_rows_df$True <- TRUE
-      if (length(excluded_true) > 0) {
-        # Indeksy powyżej nrow(true_rows_df) usuwamy
-        excluded_true <- excluded_true[excluded_true <= nrow(true_rows_df)]
-        true_rows_df$True[excluded_true] <- FALSE
-      }
-    } else {
-      true_rows_df$True <- logical(0)
+    true_rows_df$True <- TRUE
+    if (length(excluded_true) > 0) {
+      true_rows_df$True[excluded_true] <- FALSE
     }
     
     # Mark False that are included
-    if (nrow(false_rows_df) > 0) {
-      false_rows_df$Included <- FALSE
-      if (length(included_false) > 0) {
-        included_false <- included_false[included_false <= nrow(false_rows_df)]
-        false_rows_df$Included[included_false] <- TRUE
-      }
-    } else {
-      false_rows_df$Included <- logical(0)
+    false_rows_df$Included <- FALSE
+    if (length(included_false) > 0) {
+      false_rows_df$Included[included_false] <- TRUE
     }
     
     true_points <- true_rows_df[true_rows_df$True, ]
@@ -323,8 +288,8 @@ server <- function(input, output, session) {
     included_false_points_df <- false_rows_df[false_rows_df$Included, ]
     
     combined_data <- rbind(
-      true_points[, c("STD..ng.", "PEAK", "T.F", "row_index")],
-      included_false_points_df[, c("STD..ng.", "PEAK", "T.F", "row_index")]
+        true_points[, c("STD..ng.", "PEAK", "T.F", "row_index")],
+        included_false_points_df[, c("STD..ng.", "PEAK", "T.F", "row_index")]
     )
     
     # Fit the model based on user selection
@@ -338,6 +303,7 @@ server <- function(input, output, session) {
     # Store the final filtered model and data
     final_filtered_model <<- model
     final_filtered_data <<- combined_data[order(combined_data$row_index), ]
+
     
     # User-defined LoD, LoQ, LoL
     lod_x <- input$lod_x
@@ -804,6 +770,8 @@ onStop(function() {
     saveRDS(raw_data, "raw_data.rds")
   }
 })
+
+
 
 # Activate
 shinyApp(ui = ui, server = server)
